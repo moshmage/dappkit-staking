@@ -140,7 +140,7 @@ export default function Deployer() {
                     <Button onClick={_deployStakingContract}
                             disabled={!tokenAddress || !_walletAddress}
                             className="w-100">
-                      Deploy {deployingERC ? <Spinner animation="grow" size="sm"/> : null}
+                      Deploy {deployingStakingContract ? <Spinner animation="grow" size="sm"/> : null}
                     </Button>
                   </Col>
                 </Row>
