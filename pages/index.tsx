@@ -37,6 +37,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
   const [isDepositing, setIsDepositing] = useState<boolean>(false);
 
   const turnFalse = (dispatcher: any) => () => dispatcher(false);
+  const catchAndLog = (message = `Failed`) => (e: Error) => console.error(message, e);
 
   function setUnderlyingERC20MaxAmount() {
     if (!_stakingContract?.erc20?.contract)
@@ -89,7 +90,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
             .map(subscribersMapper(subscriptions))
             .map(fetchSubscriptionMapper))
           .then(r => allSettlerMapper(r).flat())
-          .then(setMySubscriptions))
+          .then(setMySubscriptions)).catch(catchAndLog(`Failed to set mySubscriptions`))
   }
 
   function _onPoolChange() {
@@ -106,7 +107,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
         .then(r => allSettlerMapper<StakingProduct>(r))
     }
 
-    _stakingContract.getProductIds().then(idsToProducts).then(setPools);
+    _stakingContract.getProductIds().then(idsToProducts).then(setPools).catch(catchAndLog(`Failed to set pools`));
   }
 
   function _onChange(evt: ChangeEvent<HTMLInputElement>) {
@@ -116,7 +117,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
   function _onWithdraw(subscription: StakingSubscription) {
     _stakingContract
       .withdrawSubscription(subscription.productId, subscription._id)
-      .then(() => loadActiveSubscriptions())
+      .then(() => loadActiveSubscriptions()).catch(catchAndLog(`Failed to withdraw`))
   }
 
   function _onSubscribe() {
@@ -130,10 +131,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
         return _stakingContract.erc20
           .approve(_stakingContract.contractAddress, +amountToLock + 1)
           .then(() => true)
-          .catch((e: any) => {
-            console.error(e);
-            return false;
-          })
+          .catch(catchAndLog(`Failed to approve`))
       })
       .then((result: boolean) => {
         if (!result)
@@ -147,6 +145,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
             _setPools();
             setUnderlyingERC20MaxAmount();
           })
+          .catch(catchAndLog(`Failed to subscribe`))
       }).finally(turnFalse(setIsSubscribing));
   }
 
@@ -164,11 +163,15 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
       .createProduct(startDate, endDate, totalMaxAmount, individualMinAmount, individualMaxAmount, APR, lockedUntilFinalization)
       .then(_setPools)
       .finally(turnFalse(setIsCreatingProduct))
+      .catch(catchAndLog(`Failed to create`))
   }
 
   function _onDeposit(amount: number) {
     setIsDepositing(true)
-    _stakingContract.depositAPRTokens(amount).then(setUnderlyingERC20MaxAmount).finally(turnFalse(setIsDepositing));
+    _stakingContract.depositAPRTokens(amount)
+      .then(setUnderlyingERC20MaxAmount)
+      .finally(turnFalse(setIsDepositing))
+      .catch(catchAndLog(`Failed to deposit`));
   }
 
   function _onActivePoolChange() {
