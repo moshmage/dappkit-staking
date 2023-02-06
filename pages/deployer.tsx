@@ -10,10 +10,10 @@ import {isZeroAddress, zeroAddress} from "ethereumjs-util";
 import {web3Connection} from "@stores/web3-connection";
 import {isAddress} from "web3-utils";
 import ConnectButton from "@component/ui/connect-button";
+import {useRouter} from "next/router";
 
 export default function Deployer() {
 
-  const _stakingContract = stakingContract();
   const _walletAddress = walletAddress();
   const _web3Connection = web3Connection()
 
@@ -25,18 +25,22 @@ export default function Deployer() {
   const [deployingERC, setDeployingERC] = useState<boolean>(false);
   const [deployingStakingContract, setDeployingStakingContract] = useState<boolean>(false);
 
+  const router = useRouter();
+
+
   function _setContractAddress(dispatcher: any) {
-    return ({contractAddress}: {contractAddress: string}) => dispatcher(contractAddress);
+    return ({contractAddress}: { contractAddress: string }) => dispatcher(contractAddress);
   }
 
   function _deployERC20() {
-    if (!tokenName || !tokenSymbol || !_stakingContract)
+    if (!tokenName || !tokenSymbol)
       return;
 
     setDeployingERC(true);
 
-    _stakingContract
-      .erc20
+    const _erc = new ERC20(_web3Connection)
+    _erc.loadAbi();
+    _erc
       .deployJsonAbi(tokenName, tokenSymbol, toSmartContractDecimals(tokenMintAmount), _walletAddress)
       .then(_setContractAddress(setTokenAddress))
       .catch((e: Error) => {
@@ -50,8 +54,10 @@ export default function Deployer() {
   function _deployStakingContract() {
     if (!tokenAddress)
       return;
-    setDeployingStakingContract(true)
-    _stakingContract
+    setDeployingStakingContract(true);
+    const _staking = new StakingContract(_web3Connection);
+    _staking.loadAbi();
+    _staking
       .deployJsonAbi(tokenAddress, zeroAddress())
       .then(_setContractAddress(setStakingContractAddress))
       .catch((e: Error) => {
@@ -68,7 +74,6 @@ export default function Deployer() {
     const _erc20 = new ERC20(_web3Connection, tokenAddress);
     _erc20.loadContract()
       .then(() => {
-        _erc20.name().then(console.log);
         _erc20.name().then(setTokenName);
         _erc20.symbol().then(setTokenSymbol);
       })
@@ -139,6 +144,16 @@ export default function Deployer() {
                     </Button>
                   </Col>
                 </Row>
+                {
+                  stakingContractAddress
+                    ? <Row>
+                      <Col className="d-grip">
+                        <Button variant="link" onClick={() => router.replace(`/${stakingContractAddress}`)}>
+                          Go to pool
+                        </Button>
+                      </Col>
+                    </Row> : null
+                }
               </Accordion.Body>
             </Accordion.Item>
           </Accordion>
