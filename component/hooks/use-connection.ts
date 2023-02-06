@@ -5,6 +5,7 @@ import {chainId, dispatchChainId} from "@/stores/chain-state";
 import {PublicEnv} from "@/constants/public-env";
 import {toHex} from "web3-utils";
 import {dispatchShowWrongChainIdModal} from "@/stores/show-wrong-chain-id-modal";
+import {dispatchShowMetamaskModal} from "@stores/show-install-metamask";
 
 export default function useConnection() {
   const _web3Connection = web3Connection();
@@ -12,6 +13,11 @@ export default function useConnection() {
   const _chainId = chainId();
 
   function connect() {
+    if (!window.ethereum) {
+      dispatchShowMetamaskModal(true);
+      return;
+    }
+
     _web3Connection
       .connect()
       .then((success: boolean) => {

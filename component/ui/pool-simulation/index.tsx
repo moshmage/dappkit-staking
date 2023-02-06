@@ -14,5 +14,5 @@ export default function PoolSimulation({APR, startDate, endDate, amount, tokenNa
   const distance = formatDistance(startDate, endDate);
   const earnAmount = calculateAPR(APR, endDate, amount, 18, startDate);
 
-  return <Col><span>Subscribing for {distance} will net {earnAmount} {tokenName}</span></Col>
+  return <Col className="text-center"><span className="form-text text-dart">Subscribing for {distance} will net {earnAmount} {tokenName}</span></Col>
 }

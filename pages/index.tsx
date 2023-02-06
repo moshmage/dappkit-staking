@@ -1,26 +1,26 @@
 import Inner from "@/component/layouts/inner";
 import Outer from "@/component/layouts/outer";
-import {stakingContract} from "@/stores/staking-contract";
-import {Button, Col, Row} from "react-bootstrap";
+import {dispatchStakingContract, STAKING_CONTRACT_ACTIONS, stakingContract} from "@/stores/staking-contract";
+import {Button, Col, Row, Spinner} from "react-bootstrap";
 import {ChangeEvent, useEffect, useState} from "react";
 import {StakingProduct, StakingSubscription} from "@taikai/dappkit";
-import {differenceInSeconds, formatDistance} from 'date-fns'
 import {walletAddress} from "@/stores/wallet-address";
 import ConnectButton from "@/component/ui/connect-button";
 import AmountSelector from "@/component/ui/amount-selector";
 import Pools from "@/component/ui/pools";
 import PoolSimulation from "@/component/ui/pool-simulation";
 import {allSettlerMapper} from "@/helpers/all-settler-mapper";
-import calculateAPR from "@/helpers/calculate-apr";
 
 import Governance from "@/component/ui/governance";
 import MySubscriptions from "@/component/ui/subscription";
-import {web3Connection} from "@/stores/web3-connection";
+import {PublicEnv} from "@constants/public-env";
+import {web3Connection} from "@stores/web3-connection";
+import {useRouter} from "next/router";
 
-export default function Home() {
+export default function Home({stakeAddress}: {stakeAddress?: string;}) {
   const _stakingContract = stakingContract();
   const _walletAddress = walletAddress();
-  const _web3 = web3Connection()
+  const _web3Connection = web3Connection()
 
   const [pools, setPools] = useState<StakingProduct[]>([]);
   const [activePool, setActivePool] = useState<StakingProduct | null>(null);
@@ -30,30 +30,27 @@ export default function Home() {
   const [tokenName, setTokenName] = useState<string>('TOKEN');
   const [amountToLock, setAmountToLock] = useState<string>('0');
   const [mySubscriptions, setMySubscriptions] = useState<StakingSubscription[]>([]);
-  const [isContractOwner, setIsContractOwner] = useState<boolean>(false)
+  const [isContractOwner, setIsContractOwner] = useState<boolean>(false);
+  const [simulationPoolDate, setSimulationPoolDate] = useState<number>(+new Date());
+  const [isSubscribing, setIsSubscribing] = useState<boolean>(false);
+  const [isCreatingProduct, setIsCreatingProduct] = useState<boolean>(false);
+  const [isDepositing, setIsDepositing] = useState<boolean>(false);
+
+  const turnFalse = (dispatcher: any) => () => dispatcher(false);
 
   function setUnderlyingERC20MaxAmount() {
-    if (!_stakingContract?.erc20?.contract || !_walletAddress)
+    if (!_stakingContract?.erc20?.contract)
       return;
 
     _stakingContract.heldTokens().then(setHeldTokens);
     _stakingContract.availableTokens().then(setAvailableTokens);
     _stakingContract?.erc20?.symbol().then(setTokenName);
+
+    if (!_walletAddress)
+      return;
+
     _stakingContract?.erc20?.getTokenAmount(_walletAddress).then(setMaxAmount);
   }
-
-  function _setPools() {
-    const idsToProducts = (ids: number[]) => {
-      const getProduct = (id: number) => _stakingContract.getProduct(id);
-      return Promise.allSettled<StakingProduct[]>(ids.map(getProduct))
-        .then(r =>
-          allSettlerMapper<StakingProduct>(r)
-            /*.filter(({endDate}) => differenceInSeconds(endDate, new Date()) > 0)*/)
-    }
-
-    _stakingContract.getProductIds().then(idsToProducts).then(setPools);
-  }
-
   function loadInformation() {
     if (!_stakingContract?.contract)
       return;
@@ -88,11 +85,28 @@ export default function Home() {
     _stakingContract.callTx(_stakingContract.contract.methods.getMySubscriptions(_walletAddress))
       .then((subscriptions: number[]) =>
         Promise.allSettled(pools
-          .filter(({subscribers}) => subscribers.includes(_walletAddress))
-          .map(subscribersMapper(subscriptions))
-          .map(fetchSubscriptionMapper))
-        .then(r => allSettlerMapper(r).flat())
-        .then(setMySubscriptions))
+            .filter(({subscribers}) => subscribers.includes(_walletAddress))
+            .map(subscribersMapper(subscriptions))
+            .map(fetchSubscriptionMapper))
+          .then(r => allSettlerMapper(r).flat())
+          .then(setMySubscriptions))
+  }
+
+  function _onPoolChange() {
+    if (!activePool)
+      return;
+
+    setActivePool(pools.find(({_id}) =>_id === activePool._id) || null)
+  }
+
+  function _setPools() {
+    const idsToProducts = (ids: number[]) => {
+      const getProduct = (id: number) => _stakingContract.getProduct(id);
+      return Promise.allSettled<StakingProduct[]>(ids.map(getProduct))
+        .then(r => allSettlerMapper<StakingProduct>(r))
+    }
+
+    _stakingContract.getProductIds().then(idsToProducts).then(setPools);
   }
 
   function _onChange(evt: ChangeEvent<HTMLInputElement>) {
@@ -108,13 +122,13 @@ export default function Home() {
   function _onSubscribe() {
     if (!activePool)
       return;
-
+    setIsSubscribing(true);
     _stakingContract.erc20.isApproved(_stakingContract.contractAddress, amountToLock)
       .then((success: boolean) => {
         if (success)
           return true;
         return _stakingContract.erc20
-          .approve(_stakingContract.contractAddress, +amountToLock+1)
+          .approve(_stakingContract.contractAddress, +amountToLock + 1)
           .then(() => true)
           .catch((e: any) => {
             console.error(e);
@@ -129,10 +143,11 @@ export default function Home() {
           .then(_setPools)
           .then(loadActiveSubscriptions)
           .finally(() => {
-            _onChange({target:{value: '0'}} as any);
+            _onChange({target: {value: '0'}} as any);
+            _setPools();
             setUnderlyingERC20MaxAmount();
           })
-      });
+      }).finally(turnFalse(setIsSubscribing));
   }
 
   function _onCreate(startDate: number,
@@ -143,16 +158,48 @@ export default function Home() {
                      APR: number,
                      lockedUntilFinalization: boolean) {
 
-    _stakingContract.createProduct(startDate, endDate, totalMaxAmount, individualMinAmount, individualMaxAmount, APR, lockedUntilFinalization).then(_setPools)
+    setIsCreatingProduct(true);
+
+    _stakingContract
+      .createProduct(startDate, endDate, totalMaxAmount, individualMinAmount, individualMaxAmount, APR, lockedUntilFinalization)
+      .then(_setPools)
+      .finally(turnFalse(setIsCreatingProduct))
   }
 
   function _onDeposit(amount: number) {
-    _stakingContract.depositAPRTokens(amount).then(setUnderlyingERC20MaxAmount);
+    setIsDepositing(true)
+    _stakingContract.depositAPRTokens(amount).then(setUnderlyingERC20MaxAmount).finally(turnFalse(setIsDepositing));
+  }
+
+  function _onActivePoolChange() {
+    if (!activePool)
+      return;
+
+    const now = +new Date();
+    const startDate = activePool.startDate;
+    if (now < +startDate)
+      setSimulationPoolDate(startDate)
+    else setSimulationPoolDate(now);
+
+    setAmountToLock('0')
+  }
+
+  function updateStakingContract() {
+    if (!_web3Connection?.started)
+      return;
+
+    dispatchStakingContract({
+      type: STAKING_CONTRACT_ACTIONS.init,
+      value: {address: stakeAddress || PublicEnv.stakingContractAddress, web3Connection: _web3Connection}
+    });
   }
 
   useEffect(loadInformation, [_stakingContract?.contract, _walletAddress]);
   useEffect(loadActiveSubscriptions, [_walletAddress, pools]);
   useEffect(setUnderlyingERC20MaxAmount, [_stakingContract?.erc20?.contract, _walletAddress]);
+  useEffect(_onActivePoolChange, [activePool]);
+  useEffect(_onPoolChange, [pools]);
+  useEffect(updateStakingContract, [_web3Connection?.started, stakeAddress]);
 
   return <>
     <Outer>
@@ -165,17 +212,23 @@ export default function Home() {
                onSelect={setActivePool}/>
 
         <Row>
-          <Col xs={12} sm={8} md={5} className="mx-auto">
+          <Col xs={12} sm={10} md={8} lg={5} className="mx-auto">
 
             {
               isContractOwner
-                ? <div className="py-3"><Governance tokenName={tokenName} onDeposit={_onDeposit} onCreate={_onCreate} availableTokens={availableTokens}/></div>
+                ? <div className="py-3"><Governance tokenName={tokenName}
+                                                    isDepositing={isDepositing}
+                                                    isCreatingProduct={isCreatingProduct}
+                                                    onDeposit={_onDeposit}
+                                                    onCreate={_onCreate}
+                                                    availableTokens={availableTokens}/></div>
                 : null
             }
 
             <Row>
               <AmountSelector onChange={_onChange}
                               tokenName={tokenName}
+                              amountValue={amountToLock}
                               balance={maxAmount}
                               maxAmount={+(activePool?.individualMaxAmount || 0)}
                               disabled={!activePool}/>
@@ -187,7 +240,7 @@ export default function Home() {
                     ? <ConnectButton className="w-100"/>
                     : <Button className="w-100"
                               disabled={!_stakingContract?.contract || !amountToLock || +amountToLock === 0 || !activePool}
-                              onClick={_onSubscribe}>Subscribe</Button>
+                              onClick={_onSubscribe}>Subscribe {isSubscribing ? <Spinner animation="grow" size="sm" /> : null}</Button>
                 }
               </Col>
             </Row>
@@ -196,12 +249,12 @@ export default function Home() {
                               amount={+amountToLock}
                               APR={activePool?.APR || 0}
                               endDate={activePool?.endDate || +new Date()}
-                              startDate={+new Date() || 0}/>
+                              startDate={simulationPoolDate}/>
             </Row>
             <hr/>
             {
               _walletAddress
-                ? <MySubscriptions items={mySubscriptions} onWithdraw={_onWithdraw} />
+                ? <MySubscriptions items={mySubscriptions} onWithdraw={_onWithdraw}/>
                 : null
             }
           </Col>

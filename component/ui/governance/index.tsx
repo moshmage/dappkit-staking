@@ -1,11 +1,14 @@
-import {Accordion, Button, Col, Row} from "react-bootstrap";
+import {Accordion, Button, Col, Row, Spinner} from "react-bootstrap";
 import {useState} from "react";
 import PoolSimulation from "@/component/ui/pool-simulation";
 import SimpleControl from "@/component/ui/form-helpers/simple-control";
+import BigNumber from "bignumber.js";
 
 interface GovernanceProps {
   tokenName: string;
   availableTokens: number;
+  isDepositing: boolean;
+  isCreatingProduct: boolean;
 
   onCreate(startDate: number,
            endDate: number,
@@ -18,7 +21,7 @@ interface GovernanceProps {
   onDeposit(amount: number): void;
 }
 
-export default function Governance({onCreate, onDeposit, tokenName, availableTokens}: GovernanceProps) {
+export default function Governance({onCreate, onDeposit, tokenName, availableTokens, isDepositing, isCreatingProduct}: GovernanceProps) {
 
   const [startDate, setStartDate] = useState<number>(0);
   const [endDate, setEndDate] = useState<number>(0);
@@ -44,8 +47,8 @@ export default function Governance({onCreate, onDeposit, tokenName, availableTok
         <Accordion.Header>Create new Product</Accordion.Header>
         <Accordion.Body>
           <Row>
-            <SimpleControl onChange={setStartDate} label="Start date" text="Define when locking starts" type="date"/>
-            <SimpleControl onChange={setEndDate} label="End date" text="Define when locking ends" type="date"/>
+            <SimpleControl onChange={setStartDate} label="Start date" text="Define when locking starts" type="datetime-local"/>
+            <SimpleControl onChange={setEndDate} label="End date" text="Define when locking ends" type="datetime-local"/>
           </Row>
           <Row>
             <SimpleControl onChange={setAPR} label={`APR ${APR}%`} text="Define APR earned when finished" type="range"
@@ -64,16 +67,19 @@ export default function Governance({onCreate, onDeposit, tokenName, availableTok
                            text="Define if contract allows withdraw before product time is complete" type="checkbox"
                            value={lockedUntilFinalization}/>
           </Row>
-          <Row className="text-center my-3">
+          <Row className="mt-3">
             <PoolSimulation tokenName={tokenName}
                             endDate={endDate}
                             startDate={startDate}
-                            amount={totalMaxAmount}
+                            amount={individualMaxAmount}
                             APR={APR}/>
+          </Row>
+          <Row className="text-center mb-3 form-text text-dark">
+            <Col><span>Will allow at least {BigNumber(totalMaxAmount).div(individualMaxAmount || 1).toString()} subscriptions</span></Col>
           </Row>
           <Row>
             <Col>
-              <Button className="w-100" onClick={_onCreate}>Create</Button>
+              <Button className="w-100" onClick={_onCreate}>Create {isCreatingProduct ? <Spinner animation="grow" size="sm" /> : null}</Button>
             </Col>
           </Row>
         </Accordion.Body>
@@ -89,7 +95,7 @@ export default function Governance({onCreate, onDeposit, tokenName, availableTok
           </Row>
           <Row className="pt-3">
             <Col>
-              <Button className="w-100" onClick={_onDeposit}>Deposit</Button>
+              <Button className="w-100" onClick={_onDeposit}>Deposit {isDepositing ? <Spinner animation="grow" size="sm" /> : null}</Button>
             </Col>
           </Row>
         </Accordion.Body>

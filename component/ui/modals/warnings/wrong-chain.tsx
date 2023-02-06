@@ -46,7 +46,7 @@ export default function WrongChain() {
   useEffect(updateRequiredNetworkInfo, []);
 
   return <>
-    <Modal show={showWrongChainIdModal()} onHide={() => dispatchShowWrongChainIdModal(false)}>
+    <Modal show={showWrongChainIdModal()}>
       <Modal.Header>
         <Modal.Title>Wrong chain</Modal.Title>
       </Modal.Header>
