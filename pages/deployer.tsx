@@ -3,7 +3,6 @@ import Outer from "@component/layouts/outer";
 import {Accordion, Alert, Button, Col, Row, Spinner} from "react-bootstrap";
 import {useEffect, useState} from "react";
 import SimpleControl from "@component/ui/form-helpers/simple-control";
-import {stakingContract} from "@stores/staking-contract";
 import {ERC20, StakingContract, toSmartContractDecimals} from "@taikai/dappkit";
 import {walletAddress} from "@stores/wallet-address";
 import {isZeroAddress, zeroAddress} from "ethereumjs-util";
@@ -11,6 +10,9 @@ import {web3Connection} from "@stores/web3-connection";
 import {isAddress} from "web3-utils";
 import ConnectButton from "@component/ui/connect-button";
 import {useRouter} from "next/router";
+import NotAdminModal from "@component/ui/modals/warnings/not-admin";
+import {PublicEnv} from "@constants/public-env";
+import isSameAddress from "@/helpers/is-same-address";
 
 export default function Deployer() {
 
@@ -26,14 +28,15 @@ export default function Deployer() {
   const [deployingStakingContract, setDeployingStakingContract] = useState<boolean>(false);
 
   const router = useRouter();
-
+  const isConnectedAndNotAdmin =
+    !!_walletAddress && !!PublicEnv.governorWallet && !isSameAddress(_walletAddress, PublicEnv.governorWallet);
 
   function _setContractAddress(dispatcher: any) {
     return ({contractAddress}: { contractAddress: string }) => dispatcher(contractAddress);
   }
 
   function _deployERC20() {
-    if (!tokenName || !tokenSymbol)
+    if (!tokenName || !tokenSymbol || isConnectedAndNotAdmin)
       return;
 
     setDeployingERC(true);
@@ -52,7 +55,7 @@ export default function Deployer() {
   }
 
   function _deployStakingContract() {
-    if (!tokenAddress)
+    if (!tokenAddress || isConnectedAndNotAdmin)
       return;
     setDeployingStakingContract(true);
     const _staking = new StakingContract(_web3Connection);
@@ -83,6 +86,7 @@ export default function Deployer() {
 
   return <Outer>
     <Inner>
+      <NotAdminModal show={isConnectedAndNotAdmin}/>
       <Row>
         <Col xs={12} sm={8} md={6} lg={5} className="mx-auto">
           {!_walletAddress ? <Row className="mb-3"><Col><ConnectButton className="w-100"/></Col></Row> : null}

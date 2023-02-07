@@ -1,6 +1,18 @@
 # dappkit-staking
 implements a staking dapp using [@taikai/dappkit](https://github.com/taikai/dappkit), NextJS and React
 
+### Development
+```bash
+npm run dev
+```
+
+### Quick Start
+- configure RPC and CHAIN_ID env-variables
+- `npm run dev`
+- navigate to `http://localhost:3000/deployer`
+- deploy ERC20 and StakingContract
+- configure STAKING_CONTRACT_ADDRESS env variable with the provided output
+
 ### Environments
 ```dotenv
 # RPC to connect to in case user has not connected wallet
@@ -14,11 +26,11 @@ NEXT_PUBLIC_REQUIRED_CHAIN_ID=
 # StakingContract address
 # ex: "0x0..."
 NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS=
-```
 
-### Development
-```bash
-npm run dev
+# (optionally) Allow only this wallet to use `/deployer` page
+# If not configured, anyone is able to create new ERC20 and StakingContracts
+# ex: "0x0..."
+NEXT_PUBLIC_GOVERNOR_WALLET=
 ```
 
 ### Structure
@@ -36,4 +48,7 @@ stores/                                 react-superstore stores for accessing ne
 ├─ store-name.tsx
 pages/                                  react-superstore stores for accessing needed values
 ├─ [NextJs Paging]                      use `components/ui/` here, apply logic where needed
+├─ [stakeAsset]/
+│  ├─ index.tsx                         Allows for `[root]/staking-contract-address` navigation
+├─ index.tsx                            Provides access to configured environment staking contract
 ```

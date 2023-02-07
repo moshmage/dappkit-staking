@@ -1,5 +1,5 @@
 import {web3Connection} from "@/stores/web3-connection";
-import {dispatchWallet, walletAddress} from "@/stores/wallet-address";
+import {dispatchWalletAddress, walletAddress} from "@/stores/wallet-address";
 import {ADDRESS_ACTIONS} from "@/stores/address-reducer";
 import {chainId, dispatchChainId} from "@/stores/chain-state";
 import {PublicEnv} from "@/constants/public-env";
@@ -22,7 +22,7 @@ export default function useConnection() {
       .connect()
       .then((success: boolean) => {
         if (success)
-          return _web3Connection.getAddress().then((value: string) => dispatchWallet({type: ADDRESS_ACTIONS.set, value}));
+          return _web3Connection.getAddress().then((value: string) => dispatchWalletAddress({type: ADDRESS_ACTIONS.set, value}));
       })
   }
 
@@ -35,6 +35,7 @@ export default function useConnection() {
 
     window.ethereum.removeAllListeners(`chainChanged`);
     window.ethereum.removeAllListeners(`connected`);
+    window.ethereum.removeAllListeners(`accountsChanged`);
 
     if (window.ethereum.isConnected()) {
       connect();
@@ -42,6 +43,10 @@ export default function useConnection() {
 
     window.ethereum.on(`connected`, evt => {
       console.debug(`Metamask connected`, evt);
+    });
+
+    window.ethereum.on(`accountsChanged`, ([value]: any) => {
+      dispatchWalletAddress({type: ADDRESS_ACTIONS.change, value});
     });
 
     window.ethereum.on(`chainChanged`, evt => {
