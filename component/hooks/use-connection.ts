@@ -22,7 +22,9 @@ export default function useConnection() {
       .connect()
       .then((success: boolean) => {
         if (success)
-          return _web3Connection.getAddress().then((value: string) => dispatchWalletAddress({type: ADDRESS_ACTIONS.set, value}));
+          return _web3Connection
+            .getAddress()
+            .then((value: string) => dispatchWalletAddress({type: ADDRESS_ACTIONS.set, value: value.toLowerCase()}));
       })
   }
 
@@ -46,7 +48,10 @@ export default function useConnection() {
     });
 
     window.ethereum.on(`accountsChanged`, ([value]: any) => {
-      dispatchWalletAddress({type: ADDRESS_ACTIONS.change, value});
+      if (_walletAddress === value)
+        return;
+
+      dispatchWalletAddress({type: ADDRESS_ACTIONS.change, value: value.toLowerCase()});
     });
 
     window.ethereum.on(`chainChanged`, evt => {
