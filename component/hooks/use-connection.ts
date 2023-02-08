@@ -6,6 +6,7 @@ import {PublicEnv} from "@/constants/public-env";
 import {toHex} from "web3-utils";
 import {dispatchShowWrongChainIdModal} from "@/stores/show-wrong-chain-id-modal";
 import {dispatchShowMetamaskModal} from "@stores/show-install-metamask";
+import isSameAddress from "@/helpers/is-same-address";
 
 export default function useConnection() {
   const _web3Connection = web3Connection();
@@ -48,7 +49,7 @@ export default function useConnection() {
     });
 
     window.ethereum.on(`accountsChanged`, ([value]: any) => {
-      if (_walletAddress === value)
+      if (isSameAddress(_walletAddress, value))
         return;
 
       dispatchWalletAddress({type: ADDRESS_ACTIONS.change, value: value.toLowerCase()});
