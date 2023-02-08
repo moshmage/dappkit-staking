@@ -75,6 +75,13 @@ export default function useConnection() {
           params: [
             {
               chainId: toHex(chainInfo?.chainId || PublicEnv.requiredChainId),
+              chainName: "taikai-dappkit-staking-test",
+              nativeCurrency: {
+                name: "Test ETH",
+                symbol: "TETH", // 2-6 characters long
+                decimals: 18,
+              },
+              rpcUrls: [PublicEnv.rpc],
               ...chainInfo,
             },
           ],
