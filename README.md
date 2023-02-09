@@ -1,19 +1,7 @@
 # dappkit-staking
 implements a staking dapp using [@taikai/dappkit](https://github.com/taikai/dappkit), NextJS and React
 
-### Development
-```bash
-npm run dev
-```
-
-### Quick Start
-- configure RPC and CHAIN_ID env-variables
-- `npm run dev`
-- navigate to `http://localhost:3000/deployer`
-- deploy ERC20 and StakingContract
-- configure STAKING_CONTRACT_ADDRESS env variable with the provided output
-
-### Environments
+### Environment variables
 These environment variables are read at build-time, [read more here](https://nextjs.org/docs/basic-features/environment-variables), and only used on NextJS context
 ```dotenv
 # RPC to connect to in case user has not connected wallet
@@ -33,6 +21,14 @@ NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS=
 # ex: "0x0..."
 NEXT_PUBLIC_GOVERNOR_WALLET=
 ```
+
+### Quick start
+- configure `NEXT_PUBLIC_RPC` and `NEXT_PUBLIC_REQUIRED_CHAIN_ID` env-variables
+- start development server with `$ npm run dev`
+- navigate to [`http://localhost:3000/deployer`](http://localhost:3000/deployer)
+- deploy ERC20 and StakingContract via web-page
+- configure `NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS` with the provided output
+- restart server
 
 ### Structure
 ```md
