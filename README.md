@@ -14,6 +14,7 @@ npm run dev
 - configure STAKING_CONTRACT_ADDRESS env variable with the provided output
 
 ### Environments
+These environment variables are read at build-time, [read more here](https://nextjs.org/docs/basic-features/environment-variables), and only used on NextJS context
 ```dotenv
 # RPC to connect to in case user has not connected wallet
 # ex: "https://rpc.somewhere.tld"
@@ -51,4 +52,49 @@ pages/                                  react-superstore stores for accessing ne
 ├─ [stakeAsset]/
 │  ├─ index.tsx                         Allows for `[root]/staking-contract-address` navigation
 ├─ index.tsx                            Provides access to configured environment staking contract
+```
+
+### Scripts
+
+```bash
+$ npm run deploy -- -help
+
+Options:
+      --version        Show version number                             [boolean]
+  -w, --web3Host       RPC endpoint                          [string] [required]
+  -p, --privateKey     Privatekey of account to be used on deploy actions
+                                                             [string] [required]
+  -n, --ercName        Name of ERC20                                    [string]
+  -s, --ercSymbol      Symbol of ERC20                                  [string]
+  -a, --ercAddress     Address of already deployed ERC20                [string]
+  -c, --cap            Amount to be minted to privateKey holder
+                                                  [number] [default: 1000000000]
+  -d, --depositAmount  Amount to be deposit to Staking Contract from deployed
+                       ERC20                      [number] [default: 1000000000]
+      --help           Show help                                       [boolean]
+  -h                                                                  [required]
+  -k                                                                  [required]
+```
+```bash
+$ npm run new-product -- -help
+
+Options:
+      --help                     Show help                             [boolean]
+      --version                  Show version number                   [boolean]
+  -w, --web3Host                 RPC endpoint                [string] [required]
+  -p, --privateKey               Privatekey of account to be used on deploy
+                                 actions                     [string] [required]
+  -s, --startDate                Start date (iso string)
+                                  [string] [default: "2023-02-09T23:00:00.000Z"]
+  -e, --endDate                  End date (iso string)
+                                  [string] [default: "2024-02-09T23:00:00.000Z"]
+  -m, --maxAmount                Max locked amount on product[number] [required]
+  -x, --individualMinAmount      Individual minimum amount per subscription
+                                                             [number] [required]
+  -z, --individualMaxAmount      Individual max amount per subscription
+                                                             [number] [required]
+  -a, --APR                      APR% used to calculate earnings
+                                                             [number] [required]
+  -l, --lockedUntilFinalization  Locked until product end date arrives [boolean]
+  -c, --contract                 Contract address            [string] [required]
 ```
