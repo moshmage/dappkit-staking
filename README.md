@@ -1,34 +1,15 @@
 # dappkit-staking
 implements a staking dapp using [@taikai/dappkit](https://github.com/taikai/dappkit), NextJS and React
 
-### Environment variables
-These environment variables are read at build-time, [read more here](https://nextjs.org/docs/basic-features/environment-variables), and only used on NextJS context
-```dotenv
-# RPC to connect to in case user has not connected wallet
-# ex: "https://rpc.somewhere.tld"
-NEXT_PUBLIC_RPC=
-
-# as seen on https://chainid.network/chains_mini.json
-# ex: 1505
-NEXT_PUBLIC_REQUIRED_CHAIN_ID=
-
-# StakingContract address
-# ex: "0x0..."
-NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS=
-
-# (optionally) Allow only this wallet to use `/deployer` page
-# If not configured, anyone is able to create new ERC20 and StakingContracts
-# ex: "0x0..."
-NEXT_PUBLIC_GOVERNOR_WALLET=
-```
-
-### Quick start
+## Quick start
 - configure `NEXT_PUBLIC_RPC` and `NEXT_PUBLIC_REQUIRED_CHAIN_ID` env-variables
 - start development server with `$ npm run dev`
 - navigate to [`http://localhost:3000/deployer`](http://localhost:3000/deployer)
 - deploy ERC20 and StakingContract via web-page
 - configure `NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS` with the provided output
 - restart server
+
+---
 
 ### Structure
 ```md
@@ -48,6 +29,27 @@ pages/                                  react-superstore stores for accessing ne
 ├─ [stakeAsset]/
 │  ├─ index.tsx                         Allows for `[root]/staking-contract-address` navigation
 ├─ index.tsx                            Provides access to configured environment staking contract
+```
+
+### Environment variables
+These environment variables are read at build-time, [read more here](https://nextjs.org/docs/basic-features/environment-variables), and only used on NextJS context
+```dotenv
+# RPC to connect to in case user has not connected wallet
+# ex: "https://rpc.somewhere.tld"
+NEXT_PUBLIC_RPC=
+
+# as seen on https://chainid.network/chains_mini.json
+# ex: 1505
+NEXT_PUBLIC_REQUIRED_CHAIN_ID=
+
+# StakingContract address
+# ex: "0x0..."
+NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS=
+
+# (optionally) Allow only this wallet to use `/deployer` page
+# If not configured, anyone is able to create new ERC20 and StakingContracts
+# ex: "0x0..."
+NEXT_PUBLIC_GOVERNOR_WALLET=
 ```
 
 ### Scripts

@@ -15,9 +15,10 @@ import Governance from "@/component/ui/governance";
 import MySubscriptions from "@/component/ui/subscription";
 import {PublicEnv} from "@constants/public-env";
 import {web3Connection} from "@stores/web3-connection";
-import {useRouter} from "next/router";
+import isSameAddress from "@/helpers/is-same-address";
+import BigNumber from "bignumber.js";
 
-export default function Home({stakeAddress}: {stakeAddress?: string;}) {
+export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: string; waitForRoute?: boolean}) {
   const _stakingContract = stakingContract();
   const _walletAddress = walletAddress();
   const _web3Connection = web3Connection()
@@ -39,18 +40,22 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
   const turnFalse = (dispatcher: any) => () => dispatcher(false);
   const catchAndLog = (message = `Failed`) => (e: Error) => console.error(message, e);
 
+  function _bn(n: string|number) {
+    return BigNumber(n).toFixed(0, 7);
+  }
+
   function setUnderlyingERC20MaxAmount() {
     if (!_stakingContract?.erc20?.contract)
       return;
 
-    _stakingContract.heldTokens().then(setHeldTokens);
-    _stakingContract.availableTokens().then(setAvailableTokens);
+    _stakingContract.heldTokens().then(_bn).then(setHeldTokens);
+    _stakingContract.availableTokens().then(_bn).then(setAvailableTokens);
     _stakingContract?.erc20?.symbol().then(setTokenName);
 
     if (!_walletAddress)
       return;
 
-    _stakingContract?.erc20?.getTokenAmount(_walletAddress).then(setMaxAmount);
+    _stakingContract?.erc20?.getTokenAmount(_walletAddress).then(_bn).then(setMaxAmount);
   }
   function loadInformation() {
     if (!_stakingContract?.contract)
@@ -86,7 +91,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
     _stakingContract.callTx(_stakingContract.contract.methods.getMySubscriptions(_walletAddress))
       .then((subscriptions: number[]) =>
         Promise.allSettled(pools
-            .filter(({subscribers}) => subscribers.includes(_walletAddress))
+            .filter(({subscribers}) => subscribers.some(a => isSameAddress(a, _walletAddress)))
             .map(subscribersMapper(subscriptions))
             .map(fetchSubscriptionMapper))
           .then(r => allSettlerMapper(r).flat())
@@ -107,7 +112,11 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
         .then(r => allSettlerMapper<StakingProduct>(r))
     }
 
-    _stakingContract.getProductIds().then(idsToProducts).then(setPools).catch(catchAndLog(`Failed to set pools`));
+    _stakingContract
+      .getProductIds()
+      .then(idsToProducts)
+      .then(setPools)
+      .catch(catchAndLog(`Failed to set pools`));
   }
 
   function _onChange(evt: ChangeEvent<HTMLInputElement>) {
@@ -123,8 +132,10 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
   function _onSubscribe() {
     if (!activePool)
       return;
+
+    const _amountToLock = BigNumber(amountToLock).toFixed(0, 8);
     setIsSubscribing(true);
-    _stakingContract.erc20.isApproved(_stakingContract.contractAddress, amountToLock)
+    _stakingContract.erc20.isApproved(_stakingContract.contractAddress, _amountToLock)
       .then((success: boolean) => {
         if (success)
           return true;
@@ -188,7 +199,7 @@ export default function Home({stakeAddress}: {stakeAddress?: string;}) {
   }
 
   function updateStakingContract() {
-    if (!_web3Connection?.started)
+    if (!_web3Connection?.started || (!stakeAddress && waitForRoute))
       return;
 
     dispatchStakingContract({

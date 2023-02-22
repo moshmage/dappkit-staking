@@ -1,5 +1,5 @@
 import {Button, Col, Form, Row, Stack} from "react-bootstrap";
-import {ChangeEvent, useState} from "react";
+import {ChangeEvent} from "react";
 import BigNumber from "bignumber.js";
 
 interface AmountSelectorProps {
@@ -15,7 +15,7 @@ interface AmountSelectorProps {
 export default function AmountSelector({onChange, onBlur = (() => {}), amountValue, tokenName, maxAmount, balance, disabled}: AmountSelectorProps) {
 
   function _onChange(percent: number) {
-    const _value = BigNumber(maxAmount).multipliedBy(percent).toFixed(18, 3)
+    const _value = +(BigNumber(maxAmount).multipliedBy(percent).toFixed(0, 8))
     onChange({target: {value:_value}} as any);
     onBlur();
   }

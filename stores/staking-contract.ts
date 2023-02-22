@@ -21,7 +21,7 @@ const reducer = (store: string, action: {type: STAKING_CONTRACT_ACTIONS, value: 
     case STAKING_CONTRACT_ACTIONS.reset:
       return null;
     default:
-      return store;
+      return null;
   }
 }
 
