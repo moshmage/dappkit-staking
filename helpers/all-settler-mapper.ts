@@ -3,6 +3,11 @@
  */
 export const allSettlerMapper = <T = any>(pool: PromiseSettledResult<T>[]): T[] => {
   return pool
-    .filter((s) => s.status === "fulfilled")
+    .filter((s) => {
+      if (s.status !== "fulfilled")
+        console.log(`Failed`, s.reason);
+
+      return s.status === "fulfilled"
+    })
     .map((s) => (s as PromiseFulfilledResult<T>).value);
 }
