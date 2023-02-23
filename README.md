@@ -2,6 +2,7 @@
 implements a staking dapp using [@taikai/dappkit](https://github.com/taikai/dappkit), NextJS and React
 
 ## Quick start
+- create `.env` file from `.env.example`
 - configure `NEXT_PUBLIC_RPC` and `NEXT_PUBLIC_REQUIRED_CHAIN_ID` env-variables
 - start development server with `$ npm run dev`
 - navigate to [`http://localhost:3000/deployer`](http://localhost:3000/deployer)
@@ -29,27 +30,6 @@ pages/                                  react-superstore stores for accessing ne
 ├─ [stakeAsset]/
 │  ├─ index.tsx                         Allows for `[root]/staking-contract-address` navigation
 ├─ index.tsx                            Provides access to configured environment staking contract
-```
-
-### Environment variables
-These environment variables are read at build-time, [read more here](https://nextjs.org/docs/basic-features/environment-variables), and only used on NextJS context
-```dotenv
-# RPC to connect to in case user has not connected wallet
-# ex: "https://rpc.somewhere.tld"
-NEXT_PUBLIC_RPC=
-
-# as seen on https://chainid.network/chains_mini.json
-# ex: 1505
-NEXT_PUBLIC_REQUIRED_CHAIN_ID=
-
-# StakingContract address
-# ex: "0x0..."
-NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS=
-
-# (optionally) Allow only this wallet to use `/deployer` page
-# If not configured, anyone is able to create new ERC20 and StakingContracts
-# ex: "0x0..."
-NEXT_PUBLIC_GOVERNOR_WALLET=
 ```
 
 ### Scripts
@@ -83,9 +63,9 @@ Options:
   -p, --privateKey               Privatekey of account to be used on deploy
                                  actions                     [string] [required]
   -s, --startDate                Start date (iso string)
-                                  [string] [default: "2023-02-09T23:00:00.000Z"]
+                                  [string] [default: "TODAY ISO STRING"]
   -e, --endDate                  End date (iso string)
-                                  [string] [default: "2024-02-09T23:00:00.000Z"]
+                                  [string] [default: "TODAY ISO STRING"]
   -m, --maxAmount                Max locked amount on product[number] [required]
   -x, --individualMinAmount      Individual minimum amount per subscription
                                                              [number] [required]
@@ -96,3 +76,48 @@ Options:
   -l, --lockedUntilFinalization  Locked until product end date arrives [boolean]
   -c, --contract                 Contract address            [string] [required]
 ```
+
+---
+
+## Go Live
+**Note** These commands are to be made from a local machine, **don't ever share or upload your private key**. Only run 
+these commands from a remote machine if you're sure of what you're doing.
+
+### Deploy the Staking contract
+
+#### Using existing ERC20
+```bash
+$ npm run deploy -- -w http://rpc.domain.tld -p YOUR_PRIVATE_KEY -a YOUR_ERC20_ADDRESS -d DEPOSIT_AMOUNT
+```
+
+#### Creating new ERC20 while deploying staking contract
+```bash
+$ npm run deploy -- -w http://rpc.domain.tld -p YOUR_PRIVATE_KEY -n ERC20_NAME -s ERC20_SYMBOL -c CAP_AMOUNT -d DEPOSIT_AMOUNT
+```
+
+### Environment variables
+Create a `.env.production` as per 
+[NextJs recommendation](https://nextjs.org/docs/basic-features/environment-variables#default-environment-variables), 
+following the [`.env.example`](./.env.example) file:
+
+Configure staking contract and governor wallet address
+```dotenv
+NEXT_PUBLIC_STAKING_CONTRACT_ADDRESS=ADDRESS_FROM_SCRIPT
+NEXT_PUBLIC_GOVERNOR_WALLET=YOUR_WALLET_ADDRESS
+```
+
+Configure RPC and Chain id via
+```dotenv
+NEXT_PUBLIC_RPC=http://rpc.domain.tld
+NEXT_PUBLIC_REQUIRED_CHAIN_ID=1
+```
+
+### Deployment
+Follow [NextJS deployment](https://nextjs.org/docs/deployment) documentation
+
+## Creating products
+Access `https://yourwebsite.tld` and connect with the same wallet used to deploy the staking contract, 
+two menus ("Create Product" and "Deposit tokens") should be visible; Use these to create new products by filling all
+the needed inputs.
+
+Alternatively, you can explore `$ npm run new-product`

@@ -38,7 +38,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
   const [isDepositing, setIsDepositing] = useState<boolean>(false);
 
   const turnFalse = (dispatcher: any) => () => dispatcher(false);
-  const catchAndLog = (message = `Failed`) => (e: Error) => console.error(message, e);
+  const logWithMessage = (message = `Failed`) => (e: Error) => console.error(message, e);
 
   function _bn(n: string|number) {
     return BigNumber(n).toFixed(0, 7);
@@ -57,6 +57,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
 
     _stakingContract?.erc20?.getTokenAmount(_walletAddress).then(_bn).then(setMaxAmount);
   }
+
   function loadInformation() {
     if (!_stakingContract?.contract)
       return;
@@ -95,7 +96,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
             .map(subscribersMapper(subscriptions))
             .map(fetchSubscriptionMapper))
           .then(r => allSettlerMapper(r).flat())
-          .then(setMySubscriptions)).catch(catchAndLog(`Failed to set mySubscriptions`))
+          .then(setMySubscriptions)).catch(logWithMessage(`Failed to set mySubscriptions`))
   }
 
   function _onPoolChange() {
@@ -116,7 +117,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
       .getProductIds()
       .then(idsToProducts)
       .then(setPools)
-      .catch(catchAndLog(`Failed to set pools`));
+      .catch(logWithMessage(`Failed to set pools`));
   }
 
   function _onChange(evt: ChangeEvent<HTMLInputElement>) {
@@ -126,7 +127,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
   function _onWithdraw(subscription: StakingSubscription) {
     _stakingContract
       .withdrawSubscription(subscription.productId, subscription._id)
-      .then(() => loadActiveSubscriptions()).catch(catchAndLog(`Failed to withdraw`))
+      .then(() => loadActiveSubscriptions()).catch(logWithMessage(`Failed to withdraw`))
   }
 
   function _onSubscribe() {
@@ -142,7 +143,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
         return _stakingContract.erc20
           .approve(_stakingContract.contractAddress, +amountToLock + 1)
           .then(() => true)
-          .catch(catchAndLog(`Failed to approve`))
+          .catch(logWithMessage(`Failed to approve`))
       })
       .then((result: boolean) => {
         if (!result)
@@ -156,7 +157,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
             _setPools();
             setUnderlyingERC20MaxAmount();
           })
-          .catch(catchAndLog(`Failed to subscribe`))
+          .catch(logWithMessage(`Failed to subscribe`))
       }).finally(turnFalse(setIsSubscribing));
   }
 
@@ -174,7 +175,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
       .createProduct(startDate, endDate, totalMaxAmount, individualMinAmount, individualMaxAmount, APR, lockedUntilFinalization)
       .then(_setPools)
       .finally(turnFalse(setIsCreatingProduct))
-      .catch(catchAndLog(`Failed to create`))
+      .catch(logWithMessage(`Failed to create`))
   }
 
   function _onDeposit(amount: number) {
@@ -182,7 +183,7 @@ export default function Home({stakeAddress, waitForRoute}: {stakeAddress?: strin
     _stakingContract.depositAPRTokens(amount)
       .then(setUnderlyingERC20MaxAmount)
       .finally(turnFalse(setIsDepositing))
-      .catch(catchAndLog(`Failed to deposit`));
+      .catch(logWithMessage(`Failed to deposit`));
   }
 
   function _onActivePoolChange() {
